@@ -1,4 +1,9 @@
-require 'rexml/document'
+# require 'rexml/document' # Will be removed when JSON parse ready
+require 'net/http'
+# require 'net/geoip'
+require 'open-uri'
+require 'erb'        
+require 'crack/json' # for just json
 
 ##
 # Add geocoding functionality (via Google) to any object.
@@ -43,7 +48,8 @@ module Geocoder
   # Methods which will be class methods of the including class.
   #
   module ClassMethods
-
+    # using geocoding / reverse geocoding from Google Map API V3 
+    GOOGLE_MAP_JSON_BASE_URL = 'http://maps.google.com/maps/api/geocode/json?'
     ##
     # Get options hash suitable for passing to ActiveRecord.find to get
     # records within a radius (in miles) of the given point.
@@ -223,8 +229,8 @@ module Geocoder
   #
   def self.distance_between(lat1, lon1, lat2, lon2, options = {})
     
-    # set default options
-    options[:units] ||= :mi
+    # set default options to km
+    options[:units] ||= :km
     
     # define conversion factors
     units = { :mi => 3956, :km => 6371 }
@@ -300,9 +306,15 @@ module Geocoder
   ##
   # Query Google for geographic information about the given phrase.
   #
-  def self.search(query)
-    if doc = _fetch_xml(query)
-      REXML::Document.new(doc)
+  def self.search(*array)
+    query = array[0]
+    sensor = array[1] || "false"
+    language = array[2] || "zh-CN"
+    # if doc = _fetch_xml(query)
+    #   REXML::Document.new(doc)
+    # end
+    if res = _fetch_json(query) 
+       Crack::JSON.parse(res)['results'][0]
     end
   end
   
@@ -310,15 +322,43 @@ module Geocoder
   # Request an XML geo search result from Google.
   # This method is not intended for general use (prefer Geocoder.search).
   #
-  def self._fetch_xml(query)
+  # def self._fetch_xml(query)
+  #   params = {
+  #     :q      => query,
+  #     :key    => GOOGLE_MAPS_API_KEY,
+  #     :output => "xml",
+  #     :sensor => "false",
+  #     :oe     => "utf8"
+  #   }
+  #   url    = "http://maps.google.com/maps/geo?" + params.to_query
+  #   
+  #   # Query geocoder and make sure it responds quickly.
+  #   begin
+  #     resp = nil
+  #     timeout(3) do
+  #       Net::HTTP.get_response(URI.parse(url)).body
+  #     end
+  #   rescue SocketError, TimeoutError
+  #     return nil
+  #   end
+  # end 
+  
+  ##
+  # Request an JSON geo search result from Google.
+  # This method is not intended for general use (prefer Geocoder.search).
+  #
+  def self._fetch_json(query, sensor, language)
     params = {
-      :q      => query,
-      :key    => GOOGLE_MAPS_API_KEY,
-      :output => "xml",
-      :sensor => "false",
-      :oe     => "utf8"
+      :sensor => sensor,
+      :language => language
     }
-    url    = "http://maps.google.com/maps/geo?" + params.to_query
+    # determine what service should be used. If query is lat and lng, need use reverse geocoding
+    if lat_lng_reg_match(query)
+      params[:latlng] = query
+    else
+      params[:address] = query
+    end
+    url = GOOGLE_MAP_JSON_BASE_URL + params.to_query
     
     # Query geocoder and make sure it responds quickly.
     begin
@@ -329,6 +369,7 @@ module Geocoder
     rescue SocketError, TimeoutError
       return nil
     end
+      
   end
   
   ##
@@ -355,5 +396,12 @@ ActiveRecord::Base.class_eval do
       :longitude   => options[:longitude] || :longitude
     }
     include Geocoder
+  end
+  
+  private
+  def lat_lng_reg_match(latlng)
+    lat, lng = latlng.split(',', 2)
+    lat_lng_reg = /-?[0-9]+(?:\.[0-9]*)?/
+    lat.to_f =~ lat_lng_reg && lng.to_f =~ lat_lng_reg
   end
 end

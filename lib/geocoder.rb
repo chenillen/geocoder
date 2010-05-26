@@ -60,7 +60,7 @@ module Geocoder
     # +offset+    :: number of records to skip (for LIMIT SQL clause)
     #
     def near_scope_options(latitude, longitude, radius = 20, options = {})
-      if ActiveRecord::Base.connection.adapter_name == "SQLite"
+      if ActiveRecord::Base.connection.adapter_name == "mysql"
         approx_near_scope_options(latitude, longitude, radius, options)
       else
         full_near_scope_options(latitude, longitude, radius, options)
@@ -378,6 +378,15 @@ module Geocoder
   def self.scope_method_name
     Rails.version.starts_with?("3") ? :scope : :named_scope
   end
+  
+  private
+  def lat_lng_reg_match(latlng)
+    # (Latitude,Longitude) Regex 
+    # /^-?([1-8]?[1-9]|[1-9]0)\.{1}\d{1,6},-?([1]?[1-7][1-9]|[1]?[1-8][0]|[1-9]?[0-9])\.{1}\d{1,6}$/
+    lat_reg = '-?([1-8]?[1-9]|[1-9]0)\.{1}\d{1,6}'
+    lng_reg = '-?([1]?[1-7][1-9]|[1]?[1-8][0]|[1-9]?[0-9])\.{1}\d{1,6}'
+    latlng =~ /^#{lat_reg},#{lng_reg}$/ ? true : false
+  end
 end
 
 ##
@@ -393,15 +402,10 @@ ActiveRecord::Base.class_eval do
     write_inheritable_attribute :geocoder_options, {
       :method_name => method_name,
       :latitude    => options[:latitude]  || :latitude,
-      :longitude   => options[:longitude] || :longitude
+      :longitude   => options[:longitude] || :longitude, 
+      # Add new option for ActiveRecord
+      :formatted_address  => options[:formatted_address] || :formatted_address
     }
     include Geocoder
-  end
-  
-  private
-  def lat_lng_reg_match(latlng)
-    lat, lng = latlng.split(',', 2)
-    lat_lng_reg = /-?[0-9]+(?:\.[0-9]*)?/
-    lat.to_f =~ lat_lng_reg && lng.to_f =~ lat_lng_reg
   end
 end

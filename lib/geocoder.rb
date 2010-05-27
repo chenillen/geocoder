@@ -8,7 +8,8 @@ require 'erb'
 # Add geocoding functionality (via Google) to any object.
 #
 module Geocoder
-  
+  ## using geocoding / reverse geocoding from Google Map API V3 
+  GOOGLE_MAP_JSON_BASE_URL = 'http://maps.google.com/maps/api/geocode/json?'
   ##
   # Implementation of 'included' hook method.
   #
@@ -47,8 +48,6 @@ module Geocoder
   # Methods which will be class methods of the including class.
   #
   module ClassMethods
-    # using geocoding / reverse geocoding from Google Map API V3 
-    GOOGLE_MAP_JSON_BASE_URL = 'http://maps.google.com/maps/api/geocode/json?'
     ##
     # Get options hash suitable for passing to ActiveRecord.find to get
     # records within a radius (in miles) of the given point.
@@ -205,12 +204,12 @@ module Geocoder
   # Don't use these two methods if you don't have +formatted_address+ +geometry+ +location_type+ set up
   def fetch_all(save = false)
     location = send(self.class.geocoder_options[:method_name])
-    Geocoder.fetch_coordinates(location) do |c| # Returned 4 data with in 1 array
+    returning Geocoder.fetch_coordinates(location) do |c| # Returned 4 data with in 1 array
       unless c.blank?
         method = (save ? "update" : "write") + "_attribute"
         send method, self.class.geocoder_options[:formatted_address], c[0]
         send method, self.class.geocoder_options[:geometry], c[1]
-        send method, self.class.geocoder_options[:geometry], c[2]
+        send method, self.class.geocoder_options[:location_type], c[2]
         send method, self.class.geocoder_options[:latitude], c[3][0]
         send method, self.class.geocoder_options[:longitude], c[3][1]
       end
@@ -237,7 +236,7 @@ module Geocoder
 
     # isolate the first which suggested by Google of the results
     formatted_address = doc['results'][0]['formatted_address']
-    geometry = ActiveSupport::JSON.encode(doc['results'][0]['geometry']) + '\n'
+    geometry = (doc['results'][0]['geometry']).to_json
     lat = doc['results'][0]['geometry']['location']['lat']
     lng = doc['results'][0]['geometry']['location']['lng']
     location_type = doc['results'][0]['geometry']['location_type']
@@ -354,7 +353,7 @@ module Geocoder
     else
       params[:address] = query
     end
-    url = GOOGLE_MAP_JSON_BASE_URL + params.to_query
+    url = Geocoder::GOOGLE_MAP_JSON_BASE_URL + params.to_query
     
     # Query geocoder and make sure it responds quickly.
     begin

@@ -1,4 +1,4 @@
-# require 'rexml/document' # Will be removed when JSON parse ready
+require 'rubygems' 
 require 'net/http'
 # require 'net/geoip'
 require 'open-uri'
@@ -185,11 +185,11 @@ module Geocoder
   #
   def fetch_coordinates(save = false)
     location = send(self.class.geocoder_options[:method_name])
-    returning Geocoder.fetch_coordinates(location) do |c|
+    returning Geocoder.fetch_coordinates(location) do |c| # Returned 4 data with in 1 array
       unless c.blank?
         method = (save ? "update" : "write") + "_attribute"
-        send method, self.class.geocoder_options[:latitude], c[0]
-        send method, self.class.geocoder_options[:longitude], c[1]
+        send method, self.class.geocoder_options[:latitude], c[3][0]
+        send method, self.class.geocoder_options[:longitude], c[3][1]
       end
     end
   end
@@ -200,7 +200,30 @@ module Geocoder
   def fetch_coordinates!
     fetch_coordinates(true)
   end
+  
+  ##
+  # Fetch all data and assign +formatted_address+ +geometry+ +location_type+ +latitude+ and +longitude+. 
+  # Don't use these two methods if you don't have +formatted_address+ +geometry+ +location_type+ set up
+  def fetch_all(save = false)
+    location = send(self.class.geocoder_options[:method_name])
+    Geocoder.fetch_coordinates(location) do |c| # Returned 4 data with in 1 array
+      unless c.blank?
+        method = (save ? "update" : "write") + "_attribute"
+        send method, self.class.geocoder_options[:formatted_address], c[0]
+        send method, self.class.geocoder_options[:geometry], c[1]
+        send method, self.class.geocoder_options[:geometry], c[2]
+        send method, self.class.geocoder_options[:latitude], c[3][0]
+        send method, self.class.geocoder_options[:longitude], c[3][1]
+      end
+    end
+  end
 
+  ##
+  # Fetch coordinates and update (save) +formatted_address+ +geometry+ +location_type+ +latitude+ and +longitude+.
+  #
+  def fetch_all!
+    fetch_all(true)
+  end
   ##
   # Query Google for the coordinates of the given phrase.
   # Returns array [lat,lon] if found, nil if not found or if network error.
@@ -210,15 +233,17 @@ module Geocoder
     return nil unless doc = self.search(query)
     
     # make sure search found a result
-    e = doc.elements['kml/Response/Status/code']
-    return nil unless (e and e.text == "200")
-    
-    # isolate the relevant part of the result
-    place = doc.elements['kml/Response/Placemark']
+    e = doc['status']
+    return nil unless (e and e == "OK")
 
-    # if there are multiple results, blindly use the first
-    coords = place.elements['Point/coordinates'].text
-    coords.split(',')[0...2].reverse.map{ |i| i.to_f }
+    # isolate the first which suggested by Google of the results
+    formatted_address = doc['results'][0]['formatted_address']
+    geometry = ActiveSupport::JSON.encode(doc['results'][0]['geometry']) + '\n'
+    lat = doc['results'][0]['geometry']['location']['lat']
+    lng = doc['results'][0]['geometry']['location']['lng']
+    location_type = doc['results'][0]['geometry']['location_type']
+    coords = lat.to_f, lng.to_f
+    return formatted_address, geometry, location_type, coords
   end
   
   ##
@@ -307,41 +332,13 @@ module Geocoder
   # Query Google for geographic information about the given phrase.
   #
   def self.search(*array)
-    query = array[0]
-    sensor = array[1] || "false"
-    language = array[2] || "zh-CN"
-    # if doc = _fetch_xml(query)
-    #   REXML::Document.new(doc)
-    # end
-    if res = _fetch_json(query) 
-       Crack::JSON.parse(res)['results'][0]
+    query = array[0] # Fetch the first paramter as address or latlng
+    sensor = array[1] || "false" # Set default sensor value to false
+    language = array[2] || "zh-CN" # Set default language to Simplified Chinese 
+    if res = _fetch_json(query, sensor, language) 
+      Crack::JSON.parse(res) #['results'][0]
     end
   end
-  
-  ##
-  # Request an XML geo search result from Google.
-  # This method is not intended for general use (prefer Geocoder.search).
-  #
-  # def self._fetch_xml(query)
-  #   params = {
-  #     :q      => query,
-  #     :key    => GOOGLE_MAPS_API_KEY,
-  #     :output => "xml",
-  #     :sensor => "false",
-  #     :oe     => "utf8"
-  #   }
-  #   url    = "http://maps.google.com/maps/geo?" + params.to_query
-  #   
-  #   # Query geocoder and make sure it responds quickly.
-  #   begin
-  #     resp = nil
-  #     timeout(3) do
-  #       Net::HTTP.get_response(URI.parse(url)).body
-  #     end
-  #   rescue SocketError, TimeoutError
-  #     return nil
-  #   end
-  # end 
   
   ##
   # Request an JSON geo search result from Google.
@@ -405,6 +402,8 @@ ActiveRecord::Base.class_eval do
       :longitude   => options[:longitude] || :longitude, 
       # Add new option for ActiveRecord
       :formatted_address  => options[:formatted_address] || :formatted_address
+      :geometry => options[:geometry] || :geometry
+      :location_type => options[:location_type] || :location_type
     }
     include Geocoder
   end

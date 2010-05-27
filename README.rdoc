@@ -13,30 +13,13 @@ Geocoder does not rely on proprietary database functions so finding geocoded obj
 
 Install either as a plugin:
 
-  script/plugin install git://github.com/alexreisner/geocoder.git
-
-or as a gem:
-
-  # add to config/environment.rb:
-  config.gem "rails-geocoder", :lib => "geocoder", :source => "http://gemcutter.org/"
-  
-  # at command prompt:
-  sudo rake gems:install
-
+  script/plugin install git://github.com/chenillen/geocoder.git
 
 === b. Rails 3
 
 Install either as a plugin:
 
-  rails plugin install git://github.com/alexreisner/geocoder.git
-
-or as a gem:
-
-  # add to Gemfile:
-  gem "rails-geocoder", :require => "geocoder"
-  
-  # at command prompt:
-  bundle install
+  rails plugin install git://github.com/chenillen//geocoder.git
 
 
 == 2. Configure
@@ -59,7 +42,11 @@ D) Optionally, auto-fetch coordinates every time your model is saved:
 
   after_validation :fetch_coordinates
 
-<i>Note that you are not stuck with the +latitude+ and +longitude+ column names, or the +address+ method. See "More On Configuration" below for details.</i>
+E) Optionally, auto-fetch coordinates, formatted_address, geometry and location_type every time your model is saved:
+
+	after_validation :fetch_all
+
+<i>Note that you are not stuck with the +latitude+, +longitude+, +formatted_address+, +geometry+ and +location_type+ column names, or the +address+ method. See "More On Configuration" below for details.</i>
 
 
 == 3. Use
@@ -68,6 +55,10 @@ Assuming +obj+ is an instance of a geocoded class, you can get its coordinates:
 
   obj.fetch_coordinates              # fetches and assigns coordinates
   obj.fetch_coordinates!             # also saves lat, lon attributes
+
+If you have other columns configured, you can use fetch_all and fetch_all! methods
+	obj.fetch_all              			   # fetches and assigns all information get from Google Map
+  obj.fetch_all!            				 # also saves lat, lon, formatted_address, geometry, location_type attributes
 
 If you have a lot of objects you can use this Rake task to geocode them all:
 
@@ -101,7 +92,8 @@ Some utility methods are also available:
 
 You are not stuck with using the +latitude+ and +longitude+ database column names for storing coordinates. For example, to use +lat+ and +lon+:
 
-  geocoded_by :address, :latitude  => :lat, :longitude => :lon
+  geocoded_by :address, :latitude  => :lat, :longitude => :lon, :formatted_address => :addr,
+        			:geometry => :geometry, :location_type => :location_type
 
 The string to use for geocoding can be anything you'd use to search Google Maps. For example, any of the following are acceptable:
 

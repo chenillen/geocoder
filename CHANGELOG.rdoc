@@ -2,6 +2,11 @@
 
 Per-release changes to Geocoder.
 
+== 0.9.5 (2010 May 27)
+
+* Fork from alexreisner, changed to use Google Map API v3, added 2 customized functions fetch_all and fetch_all!
+* Set default unit to km when using in China, default language out put to Simplified Chinese, using JSON instead of xml parse
+
 == 0.9.1 (2010 May 4)
 
 * Use scope instead of named_scope in Rails 3.

@@ -160,7 +160,7 @@ module Geocoder
   # Calculate the distance from the object to a point (lat,lon).
   # Valid units are defined in <tt>distance_between</tt> class method.
   #
-  def distance_to(lat, lon, units = :mi)
+  def distance_to(lat, lon, units = :km)
     return nil unless geocoded?
     mylat,mylon = read_coordinates
     Geocoder.distance_between(mylat, mylon, lat, lon, :units => units)

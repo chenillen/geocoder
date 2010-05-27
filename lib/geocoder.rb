@@ -401,8 +401,8 @@ ActiveRecord::Base.class_eval do
       :latitude    => options[:latitude]  || :latitude,
       :longitude   => options[:longitude] || :longitude, 
       # Add new option for ActiveRecord
-      :formatted_address  => options[:formatted_address] || :formatted_address
-      :geometry => options[:geometry] || :geometry
+      :formatted_address  => options[:formatted_address] || :formatted_address, 
+      :geometry => options[:geometry] || :geometry,
       :location_type => options[:location_type] || :location_type
     }
     include Geocoder

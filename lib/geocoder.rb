@@ -3,7 +3,6 @@ require 'net/http'
 # require 'net/geoip'
 require 'open-uri'
 require 'erb'        
-require 'crack/json' # for just json
 
 ##
 # Add geocoding functionality (via Google) to any object.
@@ -336,7 +335,7 @@ module Geocoder
     sensor = array[1] || "false" # Set default sensor value to false
     language = array[2] || "zh-CN" # Set default language to Simplified Chinese 
     if res = _fetch_json(query, sensor, language) 
-      Crack::JSON.parse(res) #['results'][0]
+      ActiveSupport::JSON.decode(res) #['results'][0]
     end
   end
   
@@ -376,7 +375,6 @@ module Geocoder
     Rails.version.starts_with?("3") ? :scope : :named_scope
   end
   
-  private
   def lat_lng_reg_match(latlng)
     # (Latitude,Longitude) Regex 
     # /^-?([1-8]?[1-9]|[1-9]0)\.{1}\d{1,6},-?([1]?[1-7][1-9]|[1]?[1-8][0]|[1-9]?[0-9])\.{1}\d{1,6}$/

@@ -349,7 +349,7 @@ module Geocoder
       :language => language
     }
     # determine what service should be used. If query is lat and lng, need use reverse geocoding
-    if lat_lng_reg_match(query)
+    if Geocoder.lat_lng_reg_match(query)
       params[:latlng] = query
     else
       params[:address] = query
@@ -375,7 +375,7 @@ module Geocoder
     Rails.version.starts_with?("3") ? :scope : :named_scope
   end
   
-  def lat_lng_reg_match(latlng)
+  def self.lat_lng_reg_match(latlng)
     # (Latitude,Longitude) Regex 
     # /^-?([1-8]?[1-9]|[1-9]0)\.{1}\d{1,6},-?([1]?[1-7][1-9]|[1]?[1-8][0]|[1-9]?[0-9])\.{1}\d{1,6}$/
     lat_reg = '-?([1-8]?[1-9]|[1-9]0)\.{1}\d{1,6}'

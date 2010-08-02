@@ -237,8 +237,8 @@ module Geocoder
     # isolate the first which suggested by Google of the results
     formatted_address = doc['results'][0]['formatted_address']
     geometry = (doc['results'][0]['geometry']).to_json
-    lat = doc['results'][0]['geometry']['location']['lat']
-    lng = doc['results'][0]['geometry']['location']['lng']
+    lat = (doc['results'][0]['geometry']['location']['lat']).to_s
+    lng = (doc['results'][0]['geometry']['location']['lng']).to_s
     location_type = doc['results'][0]['geometry']['location_type']
     coords = lat.to_f, lng.to_f
     return formatted_address, geometry, location_type, coords

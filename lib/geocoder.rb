@@ -217,7 +217,6 @@ module Geocoder
       send method, self.class.geocoder_options[:longitude], coords[3][1]
     end
     coords
-    end
   end
 
   ##

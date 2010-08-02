@@ -204,16 +204,19 @@ module Geocoder
   # Fetch all data and assign +formatted_address+ +geometry+ +location_type+ +latitude+ and +longitude+. 
   # Don't use these two methods if you don't have +formatted_address+ +geometry+ +location_type+ set up
   def fetch_all(save = false)
-    location = send(self.class.geocoder_options[:method_name])
-    returning Geocoder.fetch_coordinates(location) do |c| # Returned 4 data with in 1 array
-      unless c.blank?
-        method = (save ? "update" : "write") + "_attribute"
-        send method, self.class.geocoder_options[:formatted_address], c[0]
-        send method, self.class.geocoder_options[:geometry], c[1]
-        send method, self.class.geocoder_options[:location_type], c[2]
-        send method, self.class.geocoder_options[:latitude], c[3][0]
-        send method, self.class.geocoder_options[:longitude], c[3][1]
-      end
+    coords = Geocoder.fetch_coordinates(
+      send(self.class.geocoder_options[:method_name])
+    )
+    # Returned 4 data with in 1 array
+    unless coords.blank?
+      method = (save ? "update" : "write") + "_attribute"
+      send method, self.class.geocoder_options[:formatted_address], coords[0]
+      send method, self.class.geocoder_options[:geometry], coords[1]
+      send method, self.class.geocoder_options[:location_type], coords[2]
+      send method, self.class.geocoder_options[:latitude], coords[3][0]
+      send method, self.class.geocoder_options[:longitude], coords[3][1]
+    end
+    coords
     end
   end
 
@@ -238,8 +241,8 @@ module Geocoder
     # isolate the first which suggested by Google of the results
     formatted_address = doc['results'][0]['formatted_address']
     geometry = (doc['results'][0]['geometry']).to_json
-    lat = (doc['results'][0]['geometry']['location']['lat']).to_s
-    lng = (doc['results'][0]['geometry']['location']['lng']).to_s
+    lat = doc['results'][0]['geometry']['location']['lat']
+    lng = doc['results'][0]['geometry']['location']['lng']
     location_type = doc['results'][0]['geometry']['location_type']
     coords = lat.to_f, lng.to_f
     return formatted_address, geometry, location_type, coords

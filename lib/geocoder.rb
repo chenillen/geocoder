@@ -212,7 +212,7 @@ module Geocoder
       method = (save ? "update" : "write") + "_attribute"
       send method, self.class.geocoder_options[:formatted_address], coords[0]
       send method, self.class.geocoder_options[:geometry], coords[1]
-      send method, self.class.geocoder_options[:location_type], coords[2]
+      # send method, self.class.geocoder_options[:location_type], coords[2]
       send method, self.class.geocoder_options[:latitude], coords[3][0]
       send method, self.class.geocoder_options[:longitude], coords[3][1]
     end
@@ -242,9 +242,9 @@ module Geocoder
     geometry = (doc['results'][0]['geometry']).to_json
     lat = doc['results'][0]['geometry']['location']['lat']
     lng = doc['results'][0]['geometry']['location']['lng']
-    location_type = doc['results'][0]['geometry']['location_type']
+    # location_type = doc['results'][0]['geometry']['location_type']
     coords = lat.to_f, lng.to_f
-    return formatted_address, geometry, location_type, coords
+    return formatted_address, geometry, coords
   end
   
   ##
@@ -403,7 +403,7 @@ ActiveRecord::Base.class_eval do
       # Add new option for ActiveRecord
       :formatted_address  => options[:formatted_address] || :formatted_address, 
       :geometry => options[:geometry] || :geometry,
-      :location_type => options[:location_type] || :location_type
+      # :location_type => options[:location_type] || :location_type
     }
     include Geocoder
   end

@@ -187,8 +187,8 @@ module Geocoder
     )
     unless coords.blank?
       method = (save ? "update" : "write") + "_attribute"
-      send method, self.class.geocoder_options[:latitude],  coords[3][0]
-      send method, self.class.geocoder_options[:longitude], coords[3][1]
+      send method, self.class.geocoder_options[:latitude],  coords[2][0]
+      send method, self.class.geocoder_options[:longitude], coords[2][1]
     end
     coords
   end
@@ -213,8 +213,8 @@ module Geocoder
       send method, self.class.geocoder_options[:formatted_address], coords[0]
       send method, self.class.geocoder_options[:geometry], coords[1]
       # send method, self.class.geocoder_options[:location_type], coords[2]
-      send method, self.class.geocoder_options[:latitude], coords[3][0]
-      send method, self.class.geocoder_options[:longitude], coords[3][1]
+      send method, self.class.geocoder_options[:latitude], coords[2][0]
+      send method, self.class.geocoder_options[:longitude], coords[2][1]
     end
     coords
   end

@@ -201,6 +201,25 @@ module Geocoder
   end
   
   ##
+  # Fetch by latlng and locating the address and geometry
+  #
+  def fetch_address_and_geometry(save = false)
+    coords = Geocoder.fetch_coordinates(
+      send(self.class.geocoder_options[:method_name])
+    )
+    unless coords.blank?
+      method = (save ? "update" : "write") + "_attribute"
+      send method, self.class.geocoder_options[:formatted_address], coords[0]
+      send method, self.class.geocoder_options[:geometry], coords[1]
+    end
+    coords
+  end
+  
+  def fetch_address_and_geometry!
+    fetch_address_and_geometry(true)
+  end
+  
+  ##
   # Fetch all data and assign +formatted_address+ +geometry+ +location_type+ +latitude+ and +longitude+. 
   # Don't use these two methods if you don't have +formatted_address+ +geometry+ +location_type+ set up
   def fetch_all(save = false)

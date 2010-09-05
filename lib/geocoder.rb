@@ -364,31 +364,35 @@ module Geocoder
   # Request an JSON geo search result from Google.
   # This method is not intended for general use (prefer Geocoder.search).
   #
-  def self._fetch_json(query, sensor, language)
-    params = {
-      :sensor => sensor,
-      :language => language
-    }
-    # determine what service should be used. If query is lat and lng, need use reverse geocoding
-    if Geocoder.lat_lng_reg_match(query)
-      params[:latlng] = query
-    else
-      params[:address] = query
-    end
-    url = Geocoder::GOOGLE_MAP_JSON_BASE_URL + params.to_query
-    
-    # Query geocoder and make sure it responds quickly.
-    begin
-      resp = nil
-      timeout(3) do
-        Net::HTTP.get_response(URI.parse(url)).body
+  class << self
+    extend ActiveSupport::Memoizable
+    def _fetch_json(query, sensor, language)
+      params = {
+        :sensor => sensor,
+        :language => language
+      }
+      # determine what service should be used. If query is lat and lng, need use reverse geocoding
+      if Geocoder.lat_lng_reg_match(query)
+        params[:latlng] = query
+      else
+        params[:address] = query
       end
-    rescue SocketError, TimeoutError
+      url = Geocoder::GOOGLE_MAP_JSON_BASE_URL + params.to_query
+    
+      # Query geocoder and make sure it responds quickly.
+      begin
+        resp = nil
+        timeout(3) do
+          Net::HTTP.get_response(URI.parse(url)).body
+        end
+      rescue SocketError, TimeoutError
       return nil
-    end
+      end
       
+    end
+    memoize :_fetch_json  
   end
-  
+
   ##
   # Name of the ActiveRecord scope method.
   #
